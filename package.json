@@ -1,23 +1,32 @@
 {
   "name": "devwake",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker:scheduler": "node -r dotenv/config worker/scheduler.js dotenv_config_path=.env.local",
+    "worker:processor": "node -r dotenv/config worker/processor.js dotenv_config_path=.env.local"
   },
   "dependencies": {
+    "@auth/mongodb-adapter": "^3.10.0",
+    "bullmq": "^5.58.1",
+    "dotenv": "^17.2.1",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.18.0",
+    "next": "15.5.0",
+    "next-auth": "^4.24.11",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.0"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
-    "@eslint/eslintrc": "^3"
+    "tailwindcss": "^4"
   }
 }
