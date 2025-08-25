@@ -1,11 +1,16 @@
 // app/(dashboard)/endpoints/page.jsx
-// UPDATED - Each endpoint now links to its new details page.
+// UPDATED - Replaced with the new UI and components.
 
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ExternalLink, Activity } from 'lucide-react';
+import ResponseChart from '@/components/shared/ResponseChart';
+import { formatDataForChart } from '@/lib/analytics';
 
 export default function EndpointsPage() {
     const [endpoints, setEndpoints] = useState([]);
@@ -33,50 +38,68 @@ export default function EndpointsPage() {
 
     return (
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-900">My Endpoints</h1>
-                <Link href="/endpoints/new">
-                    <Button>Add New Endpoint</Button>
-                </Link>
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-bold text-foreground">My Endpoints</h1>
+                <Button asChild>
+                    <Link href="/endpoints/new">Add New Endpoint</Link>
+                </Button>
             </div>
 
-            <div className="mt-8">
+            <div className="space-y-6">
                 {endpoints.length === 0 ? (
-                    <div className="text-center py-10 bg-white rounded-lg shadow">
-                        <h3 className="text-lg font-medium text-gray-900">No endpoints found.</h3>
-                        <p className="mt-1 text-sm text-gray-500">Get started by adding your first one!</p>
-                    </div>
+                    <Card className="text-center py-12">
+                        <CardContent>
+                            <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-foreground mb-2">No endpoints yet</h3>
+                            <p className="text-muted-foreground mb-6">
+                                Get started by adding your first endpoint to monitor.
+                            </p>
+                            <Button asChild>
+                                <Link href="/endpoints/new">Add Your First Endpoint</Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
                 ) : (
-                    <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                        <ul role="list" className="divide-y divide-gray-200">
-                            {endpoints.map((endpoint) => (
-                                <li key={endpoint._id}>
-                                    {/* *** KEY CHANGE HERE: Link to the details page *** */}
-                                    <Link href={`/endpoints/${endpoint._id}`} className="block hover:bg-gray-50">
-                                        <div className="px-4 py-4 sm:px-6">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-sm font-medium text-indigo-600 truncate">{endpoint.urlToPing}</p>
-                                                <div className="ml-2 flex-shrink-0 flex">
-                                                    <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${endpoint.isSmartPingEnabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                        {endpoint.isSmartPingEnabled ? 'Smart' : 'Regular'}
-                                                    </p>
-                                                </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {endpoints.map((endpoint) => {
+                            const chartData = formatDataForChart(endpoint.pingLogs);
+                            const lastPing = endpoint.pingLogs?.[0];
+
+                            return (
+                                <Link href={`/endpoints/${endpoint._id}`} key={endpoint._id}>
+                                    <Card className="cursor-pointer hover:shadow-lg transition-all duration-fast border-border">
+                                        <CardHeader className="pb-4">
+                                            <CardTitle className="text-lg font-semibold text-foreground truncate flex items-center space-x-2">
+                                                <span className="truncate">{endpoint.urlToPing}</span>
+                                                <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                            </CardTitle>
+                                            <div className="flex items-center space-x-2 pt-2">
+                                                <Badge variant={lastPing?.status >= 200 && lastPing?.status < 300 ? 'success' : 'error'}>
+                                                    {lastPing ? 'Active' : 'Pending'}
+                                                </Badge>
+                                                <Badge variant="outline">
+                                                    {endpoint.isSmartPingEnabled ? 'Smart' : 'Regular'}
+                                                </Badge>
+                                                <span className="text-sm text-muted-foreground">
+                                                    Every {endpoint.pingIntervalMinutes} min
+                                                </span>
                                             </div>
-                                            <div className="mt-2 sm:flex sm:justify-between">
-                                                <div className="sm:flex">
-                                                    <p className="flex items-center text-sm text-gray-500">
-                                                        Pinging every {endpoint.pingIntervalMinutes} minutes
-                                                    </p>
-                                                </div>
-                                                <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                                    <p>Status: <span className="font-medium text-green-600">Active</span></p>
-                                                </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="mb-4">
+                                                <p className="text-xs text-muted-foreground mb-2">
+                                                    Response Time (Last 50 pings)
+                                                </p>
+                                                <ResponseChart
+                                                    data={chartData}
+                                                    height={120}
+                                                />
                                             </div>
-                                        </div>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
+                            );
+                        })}
                     </div>
                 )}
             </div>
