@@ -1,11 +1,11 @@
 // app/(dashboard)/endpoints/[id]/page.jsx
-// UPDATED - Now displays a table with the 5 most recent ping logs.
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { formatDataForChart } from '@/lib/analytics';
+import ResponseChart from '@/components/shared/ResponseChart';
 
 const getCodeSnippets = (smartPingUrl) => ({
     'nodejs-express': `// In your main Express file (e.g., server.js)
@@ -47,6 +47,7 @@ export default function EndpointDetailsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState('nodejs-express');
     const params = useParams();
     const { id } = params;
 
@@ -71,7 +72,9 @@ export default function EndpointDetailsPage() {
     if (error) return <div className="text-center p-10 text-red-600">Error: {error}</div>;
     if (!endpoint) return <div className="text-center p-10">Endpoint not found.</div>;
 
+    const chartData = formatDataForChart(endpoint.pingLogs);
     const smartPingUrl = `${window.location.origin}/api/notify/${endpoint.smartPingId}`;
+    const codeSnippets = getCodeSnippets(smartPingUrl);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(smartPingUrl);
@@ -86,7 +89,6 @@ export default function EndpointDetailsPage() {
                 <h1 className="text-3xl font-bold text-gray-900 truncate mt-2">{endpoint.urlToPing}</h1>
             </div>
 
-            {/* Details Section */}
             <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div className="px-4 py-5 sm:px-6">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">Endpoint Details</h3>
@@ -109,7 +111,6 @@ export default function EndpointDetailsPage() {
                 </div>
             </div>
 
-            {/* Smart Pinging Setup Section */}
             {endpoint.isSmartPingEnabled && (
                 <div className="mt-8">
                     <h3 className="text-lg font-medium text-gray-900">Smart Pinging Setup</h3>
@@ -125,16 +126,29 @@ export default function EndpointDetailsPage() {
                             </button>
                         </div>
                         <div className="mt-4">
-                            <p className="text-sm text-gray-600 mb-2">Example code snippets:</p>
+                            <label htmlFor="language" className="block text-sm font-medium text-gray-700">Select your framework:</label>
+                            <select id="language" value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md">
+                                <option value="nodejs-express">Node.js (Express)</option>
+                                <option value="springboot">Spring Boot (Java)</option>
+                                <option value="nextjs">Next.js</option>
+                            </select>
+                        </div>
+                        <div className="mt-4">
                             <pre className="p-3 bg-gray-900 text-white rounded-md text-sm overflow-x-auto">
-                                <code>{getCodeSnippets(smartPingUrl)['nodejs-express']}</code>
+                                <code>{codeSnippets[selectedLanguage]}</code>
                             </pre>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* *** NEW SECTION: PING LOGS *** */}
+            <div className="mt-8">
+                <h3 className="text-lg font-medium text-gray-900">Response Time (Last 50 Pings)</h3>
+                <div className="mt-4 bg-white p-6 rounded-lg shadow">
+                    <ResponseChart data={chartData} />
+                </div>
+            </div>
+
             <div className="mt-8">
                 <h3 className="text-lg font-medium text-gray-900">Recent Pings</h3>
                 <div className="mt-4 bg-white shadow overflow-hidden sm:rounded-md">
@@ -148,7 +162,7 @@ export default function EndpointDetailsPage() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {endpoint.pingLogs.slice(0, 5).map((log) => ( // Show latest 5
+                                {endpoint.pingLogs.slice(0, 5).map((log) => (
                                     <tr key={log._id}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(log.timestamp).toLocaleString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
